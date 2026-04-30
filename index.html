@@ -436,9 +436,21 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
 
 <script>
 (function(){
-var E=window.ElementPlus||{};
-var Msg=E.ElMessage||{success:function(m){alert(m)},error:function(m){alert('错误:'+m)},warning:function(m){alert('警告:'+m)},info:function(m){alert(m)}};
-var MsgBox=E.ElMessageBox||{confirm:function(m,t,o){return Promise.resolve()},prompt:function(m,t,o){return Promise.resolve({value:''})}};
+// 安全超时：15秒后强制隐藏加载画面
+setTimeout(function(){var l=document.getElementById('app-loading');if(l){l.innerHTML='<p style="color:#f56c6c;font-size:16px">⚠ 加载超时<br><small>请刷新页面重试 (Ctrl+Shift+R)</small></p>';}},15000);
+
+try{
+// 兼容 ElementPlus 全局变量：Element Plus(Vue3) 用 ElementPlus，旧版 Element UI(Vue2) 用 ELEMENT
+// 创建一个兼容的 ELEMENT 全局对象，让模板中的 ELEMENT.Message 等引用正常工作
+var EP=window.ElementPlus||{};
+window.ELEMENT={
+  Message: EP.ElMessage||{success:function(m){alert(m)},error:function(m){alert('错误:'+m)},warning:function(m){alert('警告:'+m)},info:function(m){alert(m)}},
+  MessageBox: EP.ElMessageBox||{confirm:function(m,t,o){return Promise.resolve()},prompt:function(m,t,o){return Promise.resolve({value:''})}},
+  Notification: EP.ElNotification||{success:function(m){alert(m)},error:function(m){alert('错误:'+m)},warning:function(m){alert('警告:'+m)},info:function(m){alert(m)}}
+};
+var E=window.ELEMENT;
+var Msg=E.Message;
+var MsgBox=E.MessageBox;
 
 // ===== 演示账号 =====
 var DEMO={
@@ -532,6 +544,12 @@ app.mount('#app');
 // Hide loading
 var ld=document.getElementById('app-loading');
 if(ld) ld.style.display='none';
+
+}catch(err){
+console.error('系统初始化失败:',err);
+var ld=document.getElementById('app-loading');
+if(ld){ld.innerHTML='<p style="color:#f56c6c;font-size:16px">⚠ 加载失败：'+err.message+'<br><small>请按 Ctrl+Shift+R 强制刷新，或检查网络连接</small></p>';}
+}
 
 })();
 </script>
