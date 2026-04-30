@@ -54,26 +54,31 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
 .answer-content.ref{background:#fdf6ec}
 .student-answer .answer-label,.reference-answer .answer-label{font-size:13px;color:#909399;margin-bottom:4px}
 .score-input{display:flex;align-items:center;gap:6px;margin-top:12px}
+.menu-icon{width:20px;text-align:center;display:inline-block;margin-right:8px}
 @media(max-width:768px){.layout-aside{width:0!important}.layout-main{padding:12px}.answer-sheet{width:120px}.login-card,.register-card{padding:24px 20px}}
+
+/* Loading遮罩 */
+#app-loading{position:fixed;inset:0;background:#1d1e2c;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999}
+#app-loading .spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.2);border-top-color:#409eff;border-radius:50%;animation:spin 1s linear infinite}
+#app-loading p{color:#909399;margin-top:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<div id="app">
-  <router-view></router-view>
-</div>
+<div id="app-loading"><div class="spinner"></div><p>系统加载中...</p></div>
+<div id="app"><router-view></router-view></div>
 
-<!-- Templates -->
 <script type="text/x-template" id="tmpl-login">
 <div class="login-page"><div class="login-bg"></div><div class="login-card">
-  <div class="login-header"><h1>🏆 学科竞赛管理系统</h1><p>学校学科竞赛一站式管理平台</p></div>
-  <el-form :model="form" :rules="rules" size="large" ref="formRef">
-    <el-form-item prop="username"><el-input v-model="form.username" placeholder="学号/工号" prefix-icon="User"/></el-form-item>
-    <el-form-item prop="password"><el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password @keyup.enter="handleLogin"/></el-form-item>
-    <el-form-item prop="captcha"><div class="captcha-row"><el-input v-model="form.captcha" placeholder="验证码" prefix-icon="Key"/><div class="captcha-img" @click="refreshCaptcha">{{captchaText}}</div></div></el-form-item>
+  <div class="login-header"><h1>学科竞赛管理系统</h1><p>学校学科竞赛一站式管理平台</p></div>
+  <el-form :model="form" :rules="rules" size="large" ref="formRef" @submit.prevent="handleLogin">
+    <el-form-item prop="username"><el-input v-model="form.username" placeholder="学号/工号" /></el-form-item>
+    <el-form-item prop="password"><el-input v-model="form.password" type="password" placeholder="密码" show-password @keyup.enter="handleLogin"/></el-form-item>
+    <el-form-item prop="captcha"><div class="captcha-row"><el-input v-model="form.captcha" placeholder="验证码"/><div class="captcha-img" @click="refreshCaptcha">{{captchaText}}</div></div></el-form-item>
     <el-form-item><el-button type="primary" :loading="loading" class="login-btn" @click="handleLogin">{{loading?'登录中...':'登 录'}}</el-button></el-form-item>
   </el-form>
   <div class="login-footer"><a href="javascript:void(0)" @click="$router.push('/register')" style="color:#409eff">没有账号？立即注册</a><span>|</span><a href="javascript:void(0)" style="color:#409eff">忘记密码</a></div>
-  <div class="demo-accounts"><el-divider>演示账号（无需注册直接登录）</el-divider>
+  <div class="demo-accounts"><el-divider>演示账号</el-divider>
     <el-table :data="[{r:'学生',u:'2024001001',p:'123456'},{r:'教师',u:'T20230001',p:'123456'},{r:'管理员',u:'admin',p:'admin123'}]" size="small" stripe>
       <el-table-column prop="r" label="角色" width="70"/><el-table-column prop="u" label="账号" width="140"/><el-table-column prop="p" label="密码" width="100"/>
     </el-table>
@@ -83,7 +88,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
 
 <script type="text/x-template" id="tmpl-register">
 <div class="register-page"><div class="register-bg"></div><div class="register-card">
-  <div class="register-header"><h1>📝 注册账号</h1><p>学科竞赛管理系统 · 仅限本校师生</p></div>
+  <div class="register-header"><h1>注册账号</h1><p>学科竞赛管理系统 · 仅限本校师生</p></div>
   <el-form :model="form" :rules="rules" size="default" label-width="90px" ref="formRef">
     <el-form-item label="真实姓名" prop="realName"><el-input v-model="form.realName" placeholder="2-10个中文汉字" maxlength="10"/></el-form-item>
     <el-form-item label="学号/工号" prop="username"><el-input v-model="form.username" placeholder="学号如2024001001，工号如T20230001" maxlength="20"/></el-form-item>
@@ -104,44 +109,44 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
 <script type="text/x-template" id="tmpl-layout">
 <div class="layout">
   <div class="layout-aside" :style="{width:isCollapse?'64px':'220px'}">
-    <div class="sidebar-logo">🏆 <span v-show="!isCollapse">学科竞赛管理</span></div>
+    <div class="sidebar-logo"><span style="font-size:20px">🏆</span> <span v-show="!isCollapse">学科竞赛管理</span></div>
     <el-menu :default-active="route.path" :collapse="isCollapse" background-color="#1d1e2c" text-color="#a6a7b3" active-text-color="#409eff" router>
       <template v-if="role==='student'">
-        <el-menu-item index="/student/dashboard"><el-icon><DataLine/></el-icon><span>首页看板</span></el-menu-item>
-        <el-menu-item index="/student/contests"><el-icon><List/></el-icon><span>竞赛列表</span></el-menu-item>
-        <el-menu-item index="/student/results"><el-icon><Trophy/></el-icon><span>我的成绩</span></el-menu-item>
-        <el-menu-item index="/student/certificates"><el-icon><Medal/></el-icon><span>电子证书</span></el-menu-item>
-        <el-menu-item index="/student/notices"><el-icon><Bell/></el-icon><span>公告通知</span></el-menu-item>
+        <el-menu-item index="/student/dashboard"><span class="menu-icon">📊</span><span>首页看板</span></el-menu-item>
+        <el-menu-item index="/student/contests"><span class="menu-icon">📋</span><span>竞赛列表</span></el-menu-item>
+        <el-menu-item index="/student/results"><span class="menu-icon">🏆</span><span>我的成绩</span></el-menu-item>
+        <el-menu-item index="/student/certificates"><span class="menu-icon">🏅</span><span>电子证书</span></el-menu-item>
+        <el-menu-item index="/student/notices"><span class="menu-icon">🔔</span><span>公告通知</span></el-menu-item>
       </template>
       <template v-if="role==='teacher'">
-        <el-menu-item index="/teacher/dashboard"><el-icon><DataLine/></el-icon><span>首页看板</span></el-menu-item>
-        <el-menu-item index="/teacher/contests"><el-icon><EditPen/></el-icon><span>竞赛管理</span></el-menu-item>
-        <el-menu-item index="/teacher/questions"><el-icon><Document/></el-icon><span>题库管理</span></el-menu-item>
-        <el-menu-item index="/teacher/grading"><el-icon><Checked/></el-icon><span>主观题阅卷</span></el-menu-item>
-        <el-menu-item index="/teacher/results"><el-icon><DataAnalysis/></el-icon><span>成绩管理</span></el-menu-item>
+        <el-menu-item index="/teacher/dashboard"><span class="menu-icon">📊</span><span>首页看板</span></el-menu-item>
+        <el-menu-item index="/teacher/contests"><span class="menu-icon">✏️</span><span>竞赛管理</span></el-menu-item>
+        <el-menu-item index="/teacher/questions"><span class="menu-icon">📄</span><span>题库管理</span></el-menu-item>
+        <el-menu-item index="/teacher/grading"><span class="menu-icon">✅</span><span>主观题阅卷</span></el-menu-item>
+        <el-menu-item index="/teacher/results"><span class="menu-icon">📈</span><span>成绩管理</span></el-menu-item>
       </template>
       <template v-if="role==='admin'">
-        <el-menu-item index="/admin/dashboard"><el-icon><DataLine/></el-icon><span>首页看板</span></el-menu-item>
-        <el-menu-item index="/admin/users"><el-icon><User/></el-icon><span>用户管理</span></el-menu-item>
-        <el-menu-item index="/admin/dept"><el-icon><OfficeBuilding/></el-icon><span>院系班级</span></el-menu-item>
-        <el-menu-item index="/admin/contests"><el-icon><Trophy/></el-icon><span>竞赛总览</span></el-menu-item>
-        <el-menu-item index="/admin/statistics"><el-icon><TrendCharts/></el-icon><span>数据统计</span></el-menu-item>
-        <el-menu-item index="/admin/system"><el-icon><Setting/></el-icon><span>系统配置</span></el-menu-item>
+        <el-menu-item index="/admin/dashboard"><span class="menu-icon">📊</span><span>首页看板</span></el-menu-item>
+        <el-menu-item index="/admin/users"><span class="menu-icon">👤</span><span>用户管理</span></el-menu-item>
+        <el-menu-item index="/admin/dept"><span class="menu-icon">🏢</span><span>院系班级</span></el-menu-item>
+        <el-menu-item index="/admin/contests"><span class="menu-icon">🏆</span><span>竞赛总览</span></el-menu-item>
+        <el-menu-item index="/admin/statistics"><span class="menu-icon">📈</span><span>数据统计</span></el-menu-item>
+        <el-menu-item index="/admin/system"><span class="menu-icon">⚙️</span><span>系统配置</span></el-menu-item>
       </template>
     </el-menu>
   </div>
   <div class="layout-main-wrap">
     <div class="layout-header">
       <div class="header-left">
-        <el-icon style="cursor:pointer" :size="20" @click="isCollapse=!isCollapse"><component :is="isCollapse?'Expand':'Fold'"/></el-icon>
-        <el-breadcrumb separator="/"><el-breadcrumb-item :to="{path:'/'}">首页</el-breadcrumb-item><el-breadcrumb-item>{{route.meta.title}}</el-breadcrumb-item></el-breadcrumb>
+        <span style="cursor:pointer;font-size:18px" @click="isCollapse=!isCollapse">{{isCollapse?'☰':'✕'}}</span>
+        <span style="font-size:13px;color:#909399">🏠 / {{route.meta.title||'首页'}}</span>
       </div>
       <div class="header-right">
         <el-dropdown trigger="click" @command="handleCmd">
-          <div class="user-info"><el-avatar size="small" icon="UserFilled"/><span>{{userName}}</span><el-tag size="small" :type="role==='admin'?'danger':role==='teacher'?'warning':'success'">{{roleLabel}}</el-tag></div>
+          <div class="user-info"><span style="font-size:18px">👤</span><span>{{userName}}</span><el-tag size="small" :type="role==='admin'?'danger':role==='teacher'?'warning':'success'">{{roleLabel}}</el-tag></div>
           <template #dropdown><el-dropdown-menu>
-            <el-dropdown-item command="pwd"><el-icon><Lock/></el-icon>修改密码</el-dropdown-item>
-            <el-dropdown-item divided command="logout"><el-icon><SwitchButton/></el-icon>退出登录</el-dropdown-item>
+            <el-dropdown-item command="pwd">🔒 修改密码</el-dropdown-item>
+            <el-dropdown-item divided command="logout">🚪 退出登录</el-dropdown-item>
           </el-dropdown-menu></template>
         </el-dropdown>
       </div>
@@ -152,7 +157,6 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
 </div>
 </script>
 
-<!-- ====== Student Views ====== -->
 <script type="text/x-template" id="tmpl-student-dashboard">
 <div>
   <el-row :gutter="20"><el-col :xs="12" :sm="6" v-for="c in cards" :key="c.label"><el-card shadow="hover" class="stat-card" :style="{borderTopColor:c.color}"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:28px;font-weight:700">{{c.value}}</div><div style="font-size:13px;color:#909399;margin-top:4px">{{c.label}}</div></div><span style="font-size:32px">{{c.icon}}</span></div></el-card></el-col></el-row>
@@ -193,9 +197,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
 </script>
 
 <script type="text/x-template" id="tmpl-contest-detail">
+<a :href="'#/student/exam/'+c.id+'/1'" target="_blank" style="display:none" ref="examLink"></a>
 <div>
   <el-card shadow="never">
-    <template #header><el-page-header @back="$router.back()"><template #content><span style="font-size:18px">{{c.name}}</span></template></el-page-header></template>
+    <template #header><div style="display:flex;align-items:center;gap:8px"><a href="javascript:void(0)" @click="$router.back()" style="color:#409eff;font-size:14px">← 返回</a><span style="font-size:18px">{{c.name}}</span></div></template>
     <el-descriptions :column="2" border>
       <el-descriptions-item label="竞赛名称">{{c.name}}</el-descriptions-item>
       <el-descriptions-item label="学科分类"><el-tag>{{c.cat}}</el-tag></el-descriptions-item>
@@ -209,20 +214,20 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
     </el-descriptions>
     <div style="margin:24px 0"><h4 style="margin-bottom:12px">竞赛说明</h4><p style="color:#606266;line-height:1.8">{{c.desc}}</p></div>
     <div style="text-align:center;margin-top:24px">
-      <template v-if="c.canSign">
+      <template v-if="c.canSign&&!c.signed">
         <template v-if="c.mode==='团队赛'">
           <el-radio-group v-model="signMode" style="margin-bottom:12px"><el-radio value="create">创建队伍</el-radio><el-radio value="join">加入队伍</el-radio></el-radio-group><br>
           <div v-if="signMode==='create'" style="display:inline-flex;gap:8px"><el-input v-model="teamName" placeholder="队伍名称" style="width:180px"/><el-button type="primary" @click="doSign">创建队伍并报名</el-button></div>
           <div v-else style="display:inline-flex;gap:8px"><el-input v-model="inviteCode" placeholder="邀请码" style="width:180px"/><el-button type="success" @click="doJoin">加入队伍</el-button></div>
         </template>
-        <el-button v-else type="primary" size="large" :disabled="c.signed" @click="doSign">{{c.signed?'已报名':'立即报名'}}</el-button>
+        <el-button v-else type="primary" size="large" @click="doSign">立即报名</el-button>
       </template>
+      <el-tag v-else-if="c.signed" type="success" size="large">已报名</el-tag>
       <el-tag v-else type="info" size="large">报名已截止</el-tag>
     </div>
-  </el-card>
-  <el-card shadow="never" style="margin-top:20px" v-if="c.showRank">
-    <template #header><span>成绩排名</span></template>
-    <el-table :data="ranks" stripe><el-table-column type="index" label="排名" width="80"/><el-table-column prop="name" label="姓名"/><el-table-column prop="dept" label="院系"/><el-table-column prop="score" label="总分" sortable/><el-table-column prop="level" label="奖项"><template #default="s"><el-tag :type="s.row.level==='一等奖'?'danger':s.row.level==='二等奖'?'warning':'success'">{{s.row.level}}</el-tag></template></el-table-column></el-table>
+    <div style="text-align:center;margin-top:16px" v-if="c.signed&&c.statusText==='进行中'">
+      <el-button type="danger" size="large" @click="$router.push('/student/exam/'+c.id+'/1')">进入考试</el-button>
+    </div>
   </el-card>
 </div>
 </script>
@@ -237,7 +242,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
       <div class="question-stem" v-html="q.stem"></div>
       <div v-if="q.type==='single'"><div v-for="(o,oi) in q.options" :key="oi" class="option-item"><el-radio v-model="answers[ci]" :value="o.k">{{o.k}}. {{o.t}}</el-radio></div></div>
       <div v-if="q.type==='multiple'"><div v-for="(o,oi) in q.options" :key="oi" class="option-item"><el-checkbox v-model="answers[ci]" :value="o.k" style="display:block">{{o.k}}. {{o.t}}</el-checkbox></div></div>
-      <div v-if="q.type==='judge'"><div class="option-item"><el-radio v-model="answers[ci]" value="true">✅ 正确</el-radio></div><div class="option-item"><el-radio v-model="answers[ci]" value="false">❌ 错误</el-radio></div></div>
+      <div v-if="q.type==='judge'"><div class="option-item"><el-radio v-model="answers[ci]" value="true">正确</el-radio></div><div class="option-item"><el-radio v-model="answers[ci]" value="false">错误</el-radio></div></div>
       <div v-if="q.type==='fill'"><el-input v-model="answers[ci]" placeholder="请填写答案" style="width:100%"/></div>
       <div v-if="q.type==='essay'||q.type==='code'"><el-input v-model="answers[ci]" type="textarea" :rows="q.type==='code'?12:8" placeholder="请输入答案..."/></div>
       <div class="question-nav"><el-button :disabled="ci===0" @click="ci--">上一题</el-button><el-button :type="ci===questions.length-1?'danger':'primary'" @click="ci<questions.length-1?ci++:doSubmit()">{{ci===questions.length-1?'提交试卷':'下一题'}}</el-button></div>
@@ -255,12 +260,12 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
     <el-table-column label="详情" width="80"><template #default="s"><el-button size="small" type="primary" link @click="showDetail(s.row)">查看</el-button></template></el-table-column>
   </el-table>
 </el-card>
-<el-dialog v-model="dv" title="成绩详情" width="500px"><el-descriptions :column="1" border v-if="detail"><el-descriptions-item label="竞赛">{{detail.cname}}</el-descriptions-item><el-descriptions-item label="总分">{{detail.score}}</el-descriptions-item><el-descriptions-item label="排名">{{detail.rank?'第'+detail.rank+'名':'-'}}</el-descriptions-item><el-descriptions-item label="获奖">{{detail.level||'-'}}</el-descriptions-item><el-descriptions-item label="客观题">{{detail.obj}}/{{detail.objTotal}}</el-descriptions-item><el-descriptions-item label="主观题">{{detail.sub}}/{{detail.subTotal}}</el-descriptions-item></el-descriptions></el-dialog>
+<el-dialog v-model="dv" title="成绩详情" width="500px"><el-descriptions :column="1" border v-if="detail"><el-descriptions-item label="竞赛">{{detail.cname}}</el-descriptions-item><el-descriptions-item label="总分">{{detail.score}}</el-descriptions-item><el-descriptions-item label="排名">{{detail.rank?'第'+detail.rank+'名':'-'}}</el-descriptions-item><el-descriptions-item label="获奖">{{detail.level||'-'}}</el-descriptions-item></el-descriptions></el-dialog>
 </script>
 
 <script type="text/x-template" id="tmpl-certificates">
 <el-card shadow="never"><template #header><span>电子证书</span></template>
-  <el-row :gutter="20"><el-col :xs="24" :sm="12" :md="8" v-for="c in list" :key="c.id"><el-card shadow="hover" style="text-align:center;padding:20px 0"><div style="font-size:48px;margin-bottom:12px">🏅</div><h3 style="margin:0 0 8px">{{c.cname}}</h3><p style="font-size:18px;font-weight:700;color:#e6a23c;margin:0 0 8px">{{c.level}}</p><p style="font-size:13px;color:#909399;margin:0 0 16px">颁发日期：{{c.date}}</p><el-button type="primary" @click="ElMessage.success('证书下载中...')">下载证书</el-button></el-card></el-col></el-row>
+  <el-row :gutter="20"><el-col :xs="24" :sm="12" :md="8" v-for="c in list" :key="c.id"><el-card shadow="hover" style="text-align:center;padding:20px 0"><div style="font-size:48px;margin-bottom:12px">🏅</div><h3 style="margin:0 0 8px">{{c.cname}}</h3><p style="font-size:18px;font-weight:700;color:#e6a23c;margin:0 0 8px">{{c.level}}</p><p style="font-size:13px;color:#909399;margin:0 0 16px">颁发日期：{{c.date}}</p><el-button type="primary" @click="ELEMENT.Message.success('证书下载中...')">下载证书</el-button></el-card></el-col></el-row>
   <el-empty v-if="list.length===0" description="暂无获奖证书"/>
 </el-card>
 </script>
@@ -271,7 +276,6 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
 </el-card>
 </script>
 
-<!-- ====== Teacher Views ====== -->
 <script type="text/x-template" id="tmpl-teacher-dashboard">
 <div>
   <el-row :gutter="20"><el-col :xs="12" :sm="6" v-for="c in cards" :key="c.label"><el-card shadow="hover" class="stat-card" :style="{borderTopColor:c.color}"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:28px;font-weight:700">{{c.value}}</div><div style="font-size:13px;color:#909399;margin-top:4px">{{c.label}}</div></div><span style="font-size:32px">{{c.icon}}</span></div></el-card></el-col></el-row>
@@ -307,10 +311,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
 
 <script type="text/x-template" id="tmpl-teacher-questions">
 <div>
-  <el-card shadow="never"><template #header><div class="card-header"><span>题库管理</span><div style="display:flex;gap:8px"><el-button type="success" @click="ElMessage.success('模板下载中...')">下载模板</el-button><el-button type="primary" @click="showDlg()">添加题目</el-button></div></div></template>
+  <el-card shadow="never"><template #header><div class="card-header"><span>题库管理</span><div style="display:flex;gap:8px"><el-button type="success" @click="ELEMENT.Message.success('模板下载中...')">下载模板</el-button><el-button type="primary" @click="showDlg()">添加题目</el-button></div></div></template>
     <el-row :gutter="12" style="margin-bottom:16px"><el-col :xs="24" :sm="6"><el-input v-model="kw" placeholder="搜索题目" clearable/></el-col><el-col :xs="12" :sm="4"><el-select v-model="tp" placeholder="题型" clearable style="width:100%"><el-option v-for="(l,v) in types" :key="v" :label="l" :value="v"/></el-select></el-col><el-col :xs="24" :sm="4"><el-button type="primary" @click="page=1">搜索</el-button></el-col></el-row>
     <el-table :data="list" stripe><el-table-column type="index" label="#" width="50"/><el-table-column prop="stem" label="题目" min-width="200" show-overflow-tooltip/><el-table-column prop="type" label="题型" width="80"><template #default="s"><el-tag size="small">{{types[s.row.type]}}</el-tag></template></el-table-column><el-table-column prop="cat" label="学科" width="80"/><el-table-column prop="score" label="分值" width="60"/>
-      <el-table-column label="操作" width="120"><template #default="s"><el-button size="small" @click="showDlg(s.row)">编辑</el-button><el-button size="small" type="danger" @click="ElMessage.success('已删除')">删除</el-button></template></el-table-column>
+      <el-table-column label="操作" width="120"><template #default="s"><el-button size="small" @click="showDlg(s.row)">编辑</el-button><el-button size="small" type="danger" @click="ELEMENT.Message.success('已删除')">删除</el-button></template></el-table-column>
     </el-table>
   </el-card>
   <el-dialog v-model="dv" :title="edit?'编辑题目':'添加题目'" width="700px">
@@ -318,14 +322,14 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
       <el-row :gutter="16"><el-col :span="8"><el-form-item label="题型"><el-select v-model="qf.type" style="width:100%"><el-option v-for="(l,v) in types" :key="v" :label="l" :value="v"/></el-select></el-form-item></el-col><el-col :span="8"><el-form-item label="学科"><el-select v-model="qf.cat" style="width:100%"><el-option v-for="c in cats" :key="c" :label="c" :value="c"/></el-select></el-form-item></el-col><el-col :span="8"><el-form-item label="分值"><el-input-number v-model="qf.score" :min="1" :max="100"/></el-form-item></el-col></el-row>
       <el-form-item label="题目内容"><el-input v-model="qf.stem" type="textarea" :rows="2"/></el-form-item>
       <template v-if="qf.type==='single'||qf.type==='multiple'">
-        <el-form-item label="选项"><div v-for="(o,i) in qf.options" :key="i" style="display:flex;gap:8px;margin-bottom:8px"><el-input :value="o.k" disabled style="width:50px"/><el-input v-model="o.t" placeholder="选项内容"/><el-button type="danger" icon="Delete" circle size="small" @click="qf.options.splice(i,1)" :disabled="qf.options.length<=2"/></div><el-button type="primary" link @click="qf.options.push({k:String.fromCharCode(65+qf.options.length),t:''})">+ 添加选项</el-button></el-form-item>
+        <el-form-item label="选项"><div v-for="(o,i) in qf.options" :key="i" style="display:flex;gap:8px;margin-bottom:8px"><el-input :value="o.k" disabled style="width:50px"/><el-input v-model="o.t" placeholder="选项内容"/><el-button type="danger" size="small" @click="qf.options.splice(i,1)" :disabled="qf.options.length<=2">删</el-button></div><el-button type="primary" link @click="qf.options.push({k:String.fromCharCode(65+qf.options.length),t:''})">+ 添加选项</el-button></el-form-item>
         <el-form-item label="正确答案"><el-select v-model="qf.answer" :multiple="qf.type==='multiple'" style="width:200px"><el-option v-for="o in qf.options" :key="o.k" :label="o.k" :value="o.k"/></el-select></el-form-item>
       </template>
       <el-form-item label="正确答案" v-if="qf.type==='judge'"><el-radio-group v-model="qf.answer"><el-radio value="true">正确</el-radio><el-radio value="false">错误</el-radio></el-radio-group></el-form-item>
       <el-form-item label="答案" v-if="qf.type==='fill'"><el-input v-model="qf.answer" placeholder="多个答案用|分隔"/></el-form-item>
       <el-form-item label="参考答案" v-if="qf.type==='essay'||qf.type==='code'"><el-input v-model="qf.answer" type="textarea" :rows="4" placeholder="参考答案或评分标准"/></el-form-item>
     </el-form>
-    <template #footer><el-button @click="dv=false">取消</el-button><el-button type="primary" @click="dv=false;ElMessage.success(edit?'修改成功':'添加成功')">保存</el-button></template>
+    <template #footer><el-button @click="dv=false">取消</el-button><el-button type="primary" @click="dv=false;ELEMENT.Message.success(edit?'修改成功':'添加成功')">保存</el-button></template>
   </el-dialog>
 </div>
 </script>
@@ -353,15 +357,14 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
 
 <script type="text/x-template" id="tmpl-teacher-results">
 <div>
-  <el-card shadow="never"><template #header><div class="card-header"><span>成绩管理</span><div style="display:flex;gap:8px"><el-select v-model="cid" placeholder="选择竞赛" style="width:180px"><el-option v-for="c in contests" :key="c.id" :label="c.name" :value="c.id"/></el-select><el-button type="success" :disabled="!cid" @click="pub=!pub;ElMessage.success(pub?'成绩已公示':'已取消公示')">{{pub?'取消公示':'公示成绩'}}</el-button><el-button type="warning" :disabled="!cid" @click="ElMessage.success('证书生成中...')">生成证书</el-button><el-button :disabled="!cid" @click="ElMessage.success('导出中...')">导出</el-button></div></div></template>
+  <el-card shadow="never"><template #header><div class="card-header"><span>成绩管理</span><div style="display:flex;gap:8px"><el-select v-model="cid" placeholder="选择竞赛" style="width:180px"><el-option v-for="c in contests" :key="c.id" :label="c.name" :value="c.id"/></el-select><el-button type="success" :disabled="!cid" @click="pub=!pub;ELEMENT.Message.success(pub?'成绩已公示':'已取消公示')">{{pub?'取消公示':'公示成绩'}}</el-button><el-button type="warning" :disabled="!cid" @click="ELEMENT.Message.success('证书生成中...')">生成证书</el-button><el-button :disabled="!cid" @click="ELEMENT.Message.success('导出中...')">导出</el-button></div></div></template>
     <el-table :data="list" stripe><el-table-column type="index" label="排名" width="70"/><el-table-column prop="sname" label="姓名" width="100"/><el-table-column prop="sno" label="学号" width="140"/><el-table-column prop="dept" label="院系" width="160"/><el-table-column prop="obj" label="客观题" width="80"/><el-table-column prop="sub" label="主观题" width="80"/><el-table-column prop="total" label="总分" width="80" sortable/>
-      <el-table-column prop="level" label="获奖" width="120"><template #default="s"><el-select v-if="!pub" v-model="s.row.level" size="small" @change="ElMessage.success('已更新')"><el-option label="一等奖" value="一等奖"/><el-option label="二等奖" value="二等奖"/><el-option label="三等奖" value="三等奖"/><el-option label="优秀奖" value="优秀奖"/><el-option label="无" value=""/></el-select><el-tag v-else :type="s.row.level==='一等奖'?'danger':s.row.level==='二等奖'?'warning':'success'">{{s.row.level||'-'}}</el-tag></template></el-table-column>
+      <el-table-column prop="level" label="获奖" width="120"><template #default="s"><el-select v-if="!pub" v-model="s.row.level" size="small" @change="ELEMENT.Message.success('已更新')"><el-option label="一等奖" value="一等奖"/><el-option label="二等奖" value="二等奖"/><el-option label="三等奖" value="三等奖"/><el-option label="优秀奖" value="优秀奖"/><el-option label="无" value=""/></el-select><el-tag v-else :type="s.row.level==='一等奖'?'danger':s.row.level==='二等奖'?'warning':'success'">{{s.row.level||'-'}}</el-tag></template></el-table-column>
     </el-table>
   </el-card>
 </div>
 </script>
 
-<!-- ====== Admin Views ====== -->
 <script type="text/x-template" id="tmpl-admin-dashboard">
 <div>
   <el-row :gutter="20"><el-col :xs="12" :sm="6" v-for="c in cards" :key="c.label"><el-card shadow="hover" class="stat-card" :style="{borderTopColor:c.color}"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:28px;font-weight:700">{{c.value}}</div><div style="font-size:13px;color:#909399;margin-top:4px">{{c.label}}</div></div><span style="font-size:32px">{{c.icon}}</span></div></el-card></el-col></el-row>
@@ -371,29 +374,29 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
 
 <script type="text/x-template" id="tmpl-admin-users">
 <div>
-  <el-card shadow="never"><template #header><div class="card-header"><span>用户管理</span><div style="display:flex;gap:8px"><el-button type="success" @click="ElMessage.success('模板下载中...')">批量导入</el-button><el-button type="primary" @click="showDlg()">添加用户</el-button></div></div></template>
+  <el-card shadow="never"><template #header><div class="card-header"><span>用户管理</span><div style="display:flex;gap:8px"><el-button type="success" @click="ELEMENT.Message.success('模板下载中...')">批量导入</el-button><el-button type="primary" @click="showDlg()">添加用户</el-button></div></div></template>
     <el-row :gutter="12" style="margin-bottom:16px"><el-col :xs="24" :sm="6"><el-input v-model="kw" placeholder="姓名/学号"/></el-col><el-col :xs="12" :sm="4"><el-select v-model="rl" placeholder="角色" clearable style="width:100%"><el-option label="学生" value="student"/><el-option label="教师" value="teacher"/><el-option label="管理员" value="admin"/></el-select></el-col><el-col :xs="24" :sm="4"><el-button type="primary">搜索</el-button></el-col></el-row>
-    <el-table :data="list" stripe><el-table-column prop="username" label="学号/工号" width="140"/><el-table-column prop="realName" label="姓名" width="100"/><el-table-column prop="role" label="角色" width="80"><template #default="s"><el-tag :type="s.row.role==='admin'?'danger':s.row.role==='teacher'?'warning':'success'" size="small">{{roleMap[s.row.role]}}</el-tag></template></el-table-column><el-table-column prop="dept" label="院系" width="160"/><el-table-column prop="cls" label="班级" width="140"/><el-table-column label="操作" width="180"><template #default="s"><el-button size="small" @click="showDlg(s.row)">编辑</el-button><el-button size="small" type="warning" @click="ElMessage.success('密码已重置')">重置密码</el-button><el-button size="small" type="danger" @click="ElMessage.success('已删除')">删除</el-button></template></el-table-column></el-table>
+    <el-table :data="list" stripe><el-table-column prop="username" label="学号/工号" width="140"/><el-table-column prop="realName" label="姓名" width="100"/><el-table-column prop="role" label="角色" width="80"><template #default="s"><el-tag :type="s.row.role==='admin'?'danger':s.row.role==='teacher'?'warning':'success'" size="small">{{roleMap[s.row.role]}}</el-tag></template></el-table-column><el-table-column prop="dept" label="院系" width="160"/><el-table-column prop="cls" label="班级" width="140"/><el-table-column label="操作" width="180"><template #default="s"><el-button size="small" @click="showDlg(s.row)">编辑</el-button><el-button size="small" type="warning" @click="ELEMENT.Message.success('密码已重置')">重置密码</el-button><el-button size="small" type="danger" @click="ELEMENT.Message.success('已删除')">删除</el-button></template></el-table-column></el-table>
   </el-card>
   <el-dialog v-model="dv" :title="edit?'编辑用户':'添加用户'" width="500px">
     <el-form :model="f" label-width="100px"><el-form-item label="学号/工号"><el-input v-model="f.username" :disabled="edit"/></el-form-item><el-form-item label="姓名"><el-input v-model="f.realName"/></el-form-item><el-form-item label="角色"><el-select v-model="f.role" style="width:100%"><el-option label="学生" value="student"/><el-option label="教师" value="teacher"/></el-select></el-form-item><el-form-item label="院系"><el-select v-model="f.dept" style="width:100%"><el-option v-for="d in depts" :key="d" :label="d" :value="d"/></el-select></el-form-item><el-form-item label="班级" v-if="f.role==='student'"><el-input v-model="f.cls"/></el-form-item></el-form>
-    <template #footer><el-button @click="dv=false">取消</el-button><el-button type="primary" @click="dv=false;ElMessage.success(edit?'修改成功':'添加成功')">保存</el-button></template>
+    <template #footer><el-button @click="dv=false">取消</el-button><el-button type="primary" @click="dv=false;ELEMENT.Message.success(edit?'修改成功':'添加成功')">保存</el-button></template>
   </el-dialog>
 </div>
 </script>
 
 <script type="text/x-template" id="tmpl-admin-dept">
 <div>
-  <el-row :gutter="20"><el-col :xs="24" :md="12"><el-card shadow="never"><template #header><div class="card-header"><span>院系管理</span><el-button type="primary" size="small" @click="showDeptDlg()">添加院系</el-button></div></template><el-table :data="depts" stripe max-height="400"><el-table-column prop="name" label="院系名称"/><el-table-column prop="code" label="代码" width="100"/><el-table-column label="操作" width="140"><template #default="s"><el-button size="small" @click="showDeptDlg(s.row)">编辑</el-button><el-button size="small" type="danger" @click="ElMessage.success('已删除')">删除</el-button></template></el-table-column></el-table></el-card></el-col>
-    <el-col :xs="24" :md="12"><el-card shadow="never"><template #header><div class="card-header"><span>班级管理</span><el-button type="primary" size="small" :disabled="!curDept" @click="showClsDlg()">添加班级</el-button></div></template><el-table :data="classes" stripe max-height="400" v-if="curDept"><el-table-column prop="name" label="班级名称"/><el-table-column prop="grade" label="年级" width="80"/><el-table-column label="操作" width="140"><template #default="s"><el-button size="small" @click="showClsDlg(s.row)">编辑</el-button><el-button size="small" type="danger" @click="ElMessage.success('已删除')">删除</el-button></template></el-table-column></el-table><el-empty v-else description="请先在左侧选择一个院系"/></el-card></el-col></el-row>
-  <el-dialog v-model="ddv" title="院系" width="400px"><el-form :model="df" label-width="100px"><el-form-item label="名称"><el-input v-model="df.name"/></el-form-item><el-form-item label="代码"><el-input v-model="df.code"/></el-form-item></el-form><template #footer><el-button @click="ddv=false">取消</el-button><el-button type="primary" @click="ddv=false;ElMessage.success('保存成功')">保存</el-button></template></el-dialog>
-  <el-dialog v-model="cdv" title="班级" width="400px"><el-form :model="cf" label-width="100px"><el-form-item label="名称"><el-input v-model="cf.name"/></el-form-item><el-form-item label="年级"><el-input v-model="cf.grade"/></el-form-item></el-form><template #footer><el-button @click="cdv=false">取消</el-button><el-button type="primary" @click="cdv=false;ElMessage.success('保存成功')">保存</el-button></template></el-dialog>
+  <el-row :gutter="20"><el-col :xs="24" :md="12"><el-card shadow="never"><template #header><div class="card-header"><span>院系管理</span><el-button type="primary" size="small" @click="showDeptDlg()">添加院系</el-button></div></template><el-table :data="depts" stripe max-height="400"><el-table-column prop="name" label="院系名称"/><el-table-column prop="code" label="代码" width="100"/><el-table-column label="操作" width="140"><template #default="s"><el-button size="small" @click="showDeptDlg(s.row)">编辑</el-button><el-button size="small" type="danger" @click="ELEMENT.Message.success('已删除')">删除</el-button></template></el-table-column></el-table></el-card></el-col>
+    <el-col :xs="24" :md="12"><el-card shadow="never"><template #header><div class="card-header"><span>班级管理</span><el-button type="primary" size="small" :disabled="!curDept" @click="showClsDlg()">添加班级</el-button></div></template><el-table :data="classes" stripe max-height="400" v-if="curDept"><el-table-column prop="name" label="班级名称"/><el-table-column prop="grade" label="年级" width="80"/><el-table-column label="操作" width="140"><template #default="s"><el-button size="small" @click="showClsDlg(s.row)">编辑</el-button><el-button size="small" type="danger" @click="ELEMENT.Message.success('已删除')">删除</el-button></template></el-table-column></el-table><el-empty v-else description="请先在左侧选择一个院系"/></el-card></el-col></el-row>
+  <el-dialog v-model="ddv" title="院系" width="400px"><el-form :model="df" label-width="100px"><el-form-item label="名称"><el-input v-model="df.name"/></el-form-item><el-form-item label="代码"><el-input v-model="df.code"/></el-form-item></el-form><template #footer><el-button @click="ddv=false">取消</el-button><el-button type="primary" @click="ddv=false;ELEMENT.Message.success('保存成功')">保存</el-button></template></el-dialog>
+  <el-dialog v-model="cdv" title="班级" width="400px"><el-form :model="cf" label-width="100px"><el-form-item label="名称"><el-input v-model="cf.name"/></el-form-item><el-form-item label="年级"><el-input v-model="cf.grade"/></el-form-item></el-form><template #footer><el-button @click="cdv=false">取消</el-button><el-button type="primary" @click="cdv=false;ELEMENT.Message.success('保存成功')">保存</el-button></template></el-dialog>
 </div>
 </script>
 
 <script type="text/x-template" id="tmpl-admin-contests">
 <el-card shadow="never"><template #header><div class="card-header"><span>竞赛总览</span><el-select v-model="fs" placeholder="状态" clearable style="width:150px"><el-option label="报名中" value="reg"/><el-option label="进行中" value="on"/><el-option label="已结束" value="end"/></el-select></div></template>
-  <el-table :data="list" stripe><el-table-column prop="name" label="竞赛名称" min-width="180"/><el-table-column prop="cat" label="学科" width="80"><template #default="s"><el-tag size="small">{{s.row.cat}}</el-tag></template></el-table-column><el-table-column prop="pub" label="发布教师" width="100"/><el-table-column prop="mode" label="模式" width="80"/><el-table-column label="报名/上限" width="100"><template #default="s">{{s.row.count}}/{{s.row.max}}</template></el-table-column><el-table-column prop="status" label="状态" width="100"><template #default="s"><el-tag :type="s.row.sType">{{s.row.status}}</el-tag></template></el-table-column><el-table-column label="操作" width="160"><template #default="s"><el-button size="small" @click="ElMessage.info(s.row.name)">详情</el-button><el-button v-if="s.row.st==='reg'" size="small" type="warning" @click="ElMessage.success('已关闭')">关闭报名</el-button></template></el-table-column></el-table>
+  <el-table :data="list" stripe><el-table-column prop="name" label="竞赛名称" min-width="180"/><el-table-column prop="cat" label="学科" width="80"><template #default="s"><el-tag size="small">{{s.row.cat}}</el-tag></template></el-table-column><el-table-column prop="pub" label="发布教师" width="100"/><el-table-column prop="mode" label="模式" width="80"/><el-table-column label="报名/上限" width="100"><template #default="s">{{s.row.count}}/{{s.row.max}}</template></el-table-column><el-table-column prop="status" label="状态" width="100"><template #default="s"><el-tag :type="s.row.sType">{{s.row.status}}</el-tag></template></el-table-column><el-table-column label="操作" width="160"><template #default="s"><el-button size="small" @click="ELEMENT.Message.info(s.row.name)">详情</el-button><el-button v-if="s.row.st==='reg'" size="small" type="warning" @click="ELEMENT.Message.success('已关闭')">关闭报名</el-button></template></el-table-column></el-table>
 </el-card>
 </script>
 
@@ -401,7 +404,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
 <div>
   <el-row :gutter="20"><el-col :xs="12" :sm="6" v-for="c in cards" :key="c.label"><el-card shadow="hover" class="stat-card" :style="{borderTopColor:c.color}"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:28px;font-weight:700">{{c.value}}</div><div style="font-size:13px;color:#909399;margin-top:4px">{{c.label}}</div></div><span style="font-size:32px">{{c.icon}}</span></div></el-card></el-col></el-row>
   <el-row :gutter="20" style="margin-top:20px"><el-col :xs="24" :md="12"><el-card shadow="hover"><template #header><span>各学科参赛人数</span></template><div ref="barC" style="height:300px"></div></el-card></el-col><el-col :xs="24" :md="12"><el-card shadow="hover"><template #header><span>获奖分布</span></template><div ref="pieC" style="height:300px"></div></el-card></el-col></el-row>
-  <el-card shadow="hover" style="margin-top:20px"><template #header><div class="card-header"><span>院系参与率</span><el-button @click="ElMessage.success('报表导出中...')">导出报表</el-button></div></template><el-table :data="deps" stripe><el-table-column prop="name" label="院系"/><el-table-column prop="total" label="学生总数"/><el-table-column prop="part" label="参赛人次"/><el-table-column label="参与率"><template #default="s"><el-progress :percentage="s.row.rate" :stroke-width="10"/></template></el-table-column><el-table-column prop="awards" label="获奖人次"/></el-table>
+  <el-card shadow="hover" style="margin-top:20px"><template #header><div class="card-header"><span>院系参与率</span><el-button @click="ELEMENT.Message.success('报表导出中...')">导出报表</el-button></div></template><el-table :data="deps" stripe><el-table-column prop="name" label="院系"/><el-table-column prop="total" label="学生总数"/><el-table-column prop="part" label="参赛人次"/><el-table-column label="参与率"><template #default="s"><el-progress :percentage="s.row.rate" :stroke-width="10"/></template></el-table-column><el-table-column prop="awards" label="获奖人次"/></el-table>
   </el-card>
 </div>
 </script>
@@ -420,133 +423,117 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;color
     <el-form-item label="登录失败锁定次数"><el-input-number v-model="cfg.lockCnt" :min="3" :max="20"/></el-form-item>
     <el-form-item label="接口限流(次/秒)"><el-input-number v-model="cfg.rateLimit" :min="10" :max="1000"/></el-form-item>
     <el-divider/>
-    <el-form-item><el-button type="primary" size="large" @click="ElMessage.success('配置已保存')">保存配置</el-button><el-button size="large" @click="ElMessage.success('已恢复默认')">恢复默认</el-button></el-form-item>
+    <el-form-item><el-button type="primary" size="large" @click="ELEMENT.Message.success('配置已保存')">保存配置</el-button><el-button size="large" @click="ELEMENT.Message.success('已恢复默认')">恢复默认</el-button></el-form-item>
   </el-form>
 </el-card>
 </script>
 
-<!-- ====== CDN Scripts ====== -->
 <script src="https://cdn.jsdelivr.net/npm/vue@3.4/dist/vue.global.prod.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vue-router@4.3/dist/vue-router.global.prod.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pinia@2.1/dist/pinia.iife.prod.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/element-plus@2.5/dist/index.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3/dist/index.iife.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5/dist/echarts.min.js"></script>
 
 <script>
-// ===== 演示账号存储 =====
-const DEMO = {
-  accounts: {
+(function(){
+var E=window.ElementPlus||{};
+var Msg=E.ElMessage||{success:function(m){alert(m)},error:function(m){alert('错误:'+m)},warning:function(m){alert('警告:'+m)},info:function(m){alert(m)}};
+var MsgBox=E.ElMessageBox||{confirm:function(m,t,o){return Promise.resolve()},prompt:function(m,t,o){return Promise.resolve({value:''})}};
+
+// ===== 演示账号 =====
+var DEMO={
+  accounts:{
     '2024001001':{password:'123456',role:'student',realName:'李明',deptName:'数学与统计学院',id:1},
     '2024001002':{password:'123456',role:'student',realName:'王芳',deptName:'计算机学院',id:2},
     'T20230001':{password:'123456',role:'teacher',realName:'张华',deptName:'计算机学院',id:10},
     'T20230002':{password:'123456',role:'teacher',realName:'李强',deptName:'数学与统计学院',id:11},
     'admin':{password:'admin123',role:'admin',realName:'系统管理员',deptName:'信息中心',id:99}
   },
-  registered: new Set(['2024001001','2024001002','T20230001','T20230002','admin']),
-  validCodes: ['SCHOOL2026','CONTEST2026','ACM2026']
-}
+  registered:new Set(['2024001001','2024001002','T20230001','T20230002','admin']),
+  validCodes:['SCHOOL2026','CONTEST2026','ACM2026']
+};
 
-// ===== Pinia Store =====
-const pinia = Pinia.createPinia()
-const useStore = Pinia.defineStore('user', ()=>{
-  const token = Vue.ref(localStorage.getItem('token')||'')
-  const info = Vue.ref(null)
-  const role = Vue.ref(localStorage.getItem('role')||'')
-
-  const isLogin = Vue.computed(()=>!!token.value)
-  const userName = Vue.computed(()=>info.value?.realName||info.value?.username||'')
-  const homePath = Vue.computed(()=>{
-    const m={student:'/student/dashboard',teacher:'/teacher/dashboard',admin:'/admin/dashboard'}
-    return m[role.value]||'/login'
-  })
-  const roleLabel = Vue.computed(()=>({student:'学生',teacher:'教师',admin:'管理员'})[role.value]||'')
-
+// ===== Pinia =====
+var pinia=Pinia.createPinia();
+var useStore=Pinia.defineStore('user',function(){
+  var token=Vue.ref(localStorage.getItem('token')||'');
+  var info=Vue.ref(null);
+  var role=Vue.ref(localStorage.getItem('role')||'');
+  var isLogin=Vue.computed(function(){return !!token.value;});
+  var userName=Vue.computed(function(){return (info.value&&info.value.realName)||(info.value&&info.value.username)||'';});
+  var homePath=Vue.computed(function(){var m={student:'/student/dashboard',teacher:'/teacher/dashboard',admin:'/admin/dashboard'};return m[role.value]||'/login';});
+  var roleLabel=Vue.computed(function(){var m={student:'学生',teacher:'教师',admin:'管理员'};return m[role.value]||'';});
   function login(u,p){
-    const a=DEMO.accounts[u]
-    if(!a||a.password!==p) throw new Error('账号或密码错误')
-    token.value='demo-'+Date.now()
-    role.value=a.role
-    info.value={id:a.id,username:u,realName:a.realName,deptName:a.deptName,role:a.role}
-    localStorage.setItem('token',token.value)
-    localStorage.setItem('role',a.role)
-    return {data:{token:token.value,role:a.role,userInfo:info.value}}
+    var a=DEMO.accounts[u];
+    if(!a||a.password!==p) throw new Error('账号或密码错误');
+    token.value='demo-'+Date.now();
+    role.value=a.role;
+    info.value={id:a.id,username:u,realName:a.realName,deptName:a.deptName,role:a.role};
+    localStorage.setItem('token',token.value);
+    localStorage.setItem('role',a.role);
   }
   function register(data){
-    if(DEMO.registered.has(data.username)) throw new Error('该账号已被注册')
-    if(!DEMO.validCodes.includes(data.inviteCode.toUpperCase())) throw new Error('邀请码无效')
-    DEMO.registered.add(data.username)
-    DEMO.accounts[data.username]={password:data.password,role:data.role,realName:data.realName,deptName:'',id:Date.now()}
+    if(DEMO.registered.has(data.username)) throw new Error('该账号已被注册');
+    if(DEMO.validCodes.indexOf(data.inviteCode.toUpperCase())===-1) throw new Error('邀请码无效');
+    DEMO.registered.add(data.username);
+    DEMO.accounts[data.username]={password:data.password,role:data.role,realName:data.realName,deptName:'',id:Date.now()};
   }
   function logout(){
-    token.value='';role.value='';info.value=null
-    localStorage.removeItem('token');localStorage.removeItem('role')
+    token.value='';role.value='';info.value=null;
+    localStorage.removeItem('token');localStorage.removeItem('role');
   }
-  function checkAuth(){
-    if(token.value&&!info.value){
-      const saved=localStorage.getItem('role')
-      if(saved) role.value=saved
-    }
-  }
-  return {token,info,role,isLogin,userName,homePath,roleLabel,login,register,logout,checkAuth}
-})()
+  return{token:token,info:info,role:role,isLogin:isLogin,userName:userName,homePath:homePath,roleLabel:roleLabel,login:login,register:register,logout:logout};
+})();
 
 // ===== Router =====
-const router = VueRouter.createRouter({
-  history: VueRouter.createWebHashHistory(),
-  routes: [
-    {path:'/login',name:'Login',component:{template:'#tmpl-login',data(){return{form:{username:'',password:'',captcha:''},loading:false,captchaText:'',rules:{username:[{required:true,message:'请输入账号'}],password:[{required:true,message:'请输入密码'}],captcha:[{required:true,message:'请输入验证码'}]}}},created(){this.refreshCaptcha()},methods:{refreshCaptcha(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=c[Math.floor(Math.random()*c.length)];this.captchaText=s},async handleLogin(){if(this.form.captcha.toUpperCase()!==this.captchaText.toUpperCase()){ElementPlus.ElMessage.error('验证码错误');this.refreshCaptcha();return}this.loading=true;try{const store=useStore();await store.login(this.form.username,this.form.password);ElementPlus.ElMessage.success('登录成功');this.$router.push(store.homePath)}catch(e){ElementPlus.ElMessage.error(e.message)}finally{this.loading=false}}}},meta:{noAuth:true}},
-    {path:'/register',name:'Register',component:{template:'#tmpl-register',data(){return{form:{realName:'',username:'',role:'student',deptId:null,className:'',phone:'',password:'',confirmPwd:'',inviteCode:'',agree:false},loading:false,depts:[{id:1,name:'数学与统计学院'},{id:2,name:'计算机学院'},{id:3,name:'物理学院'},{id:4,name:'外国语学院'},{id:5,name:'化学化工学院'},{id:6,name:'生命科学学院'},{id:7,name:'信息工程学院'}],rules:{realName:[{required:true,validator:(r,v,cb)=>{if(!v)cb('请输入姓名');else if(!/^[一-龥]{2,10}$/.test(v))cb('请输入2-10个中文汉字');else cb()}}],username:[{required:true,validator:(r,v,cb)=>{if(!v)cb('请输入学号/工号');else if(this.form.role==='student'&&!/^\d{6,12}$/.test(v))cb('学号为6-12位数字');else if(this.form.role==='teacher'&&!/^T\d{4,10}$/.test(v))cb('工号为T+数字');else if(DEMO.registered.has(v))cb('该账号已被注册');else cb()}}],role:[{required:true}],deptId:[{required:true,message:'请选择院系'}],className:[{required:true,message:'请输入班级'}],phone:[{required:true,validator:(r,v,cb)=>{if(!v)cb('请输入手机号');else if(!/^1[3-9]\d{9}$/.test(v))cb('手机号格式不正确');else cb()}}],password:[{required:true,validator:(r,v,cb)=>{if(!v)cb('请输入密码');else if(v.length<6||v.length>16)cb('6-16位');else if(!/[a-zA-Z]/.test(v))cb('需含字母');else if(!/\d/.test(v))cb('需含数字');else cb()}}],confirmPwd:[{required:true,validator:(r,v,cb)=>{if(!v)cb('请确认密码');else if(v!==this.form.password)cb('两次密码不一致');else cb()}}],inviteCode:[{required:true,validator:(r,v,cb)=>{if(!v)cb('请输入邀请码');else if(!DEMO.validCodes.includes(v.toUpperCase()))cb('邀请码无效');else cb()}}],agree:[{validator:(r,v,cb)=>{if(!v)cb('请同意协议');else cb()}}]}}},methods:{async handleRegister(){const valid=await this.$refs.formRef.validate().catch(()=>false);if(!valid)return;this.loading=true;try{const store=useStore();store.register(this.form);await new Promise(r=>setTimeout(r,800));ElementPlus.ElMessage.success('注册成功！即将跳转登录页...');setTimeout(()=>this.$router.push('/login'),1200)}catch(e){ElementPlus.ElMessage.error(e.message)}finally{this.loading=false}}}},meta:{noAuth:true}},
-    {path:'/',redirect:'/student/dashboard',component:{template:'#tmpl-layout',data(){return{isCollapse:false}},computed:{role(){return useStore().role},userName(){return useStore().userName},roleLabel(){return useStore().roleLabel},route(){return this.$route}},methods:{handleCmd(c){if(c==='logout'){ElementPlus.ElMessageBox.confirm('确定退出？','提示',{type:'warning'}).then(()=>{useStore().logout();this.$router.push('/login')}).catch(()=>{})}else if(c==='pwd'){ElementPlus.ElMessageBox.prompt('请输入新密码','修改密码',{inputType:'password'}).then(()=>ElementPlus.ElMessage.success('密码修改成功')).catch(()=>{})}}}},children:[
-      // Student
-      {path:'student/dashboard',component:{template:'#tmpl-student-dashboard',data(){return{cards:[{label:'报名竞赛',value:3,icon:'🏆',color:'#409eff'},{label:'已获奖项',value:2,icon:'🏅',color:'#e6a23c'},{label:'考试完成',value:5,icon:'✅',color:'#67c23a'},{label:'未读通知',value:3,icon:'🔔',color:'#f56c6c'}],contests:[{id:1,name:'2026年数学建模竞赛',cat:'数学',status:'报名中',sType:'success'},{id:2,name:'ACM程序设计选拔赛',cat:'信息',status:'进行中',sType:'warning'},{id:3,name:'英语演讲大赛',cat:'英语',status:'即将开始',sType:'info'}],notices:[{id:1,title:'数学建模竞赛报名通知',time:'2026-04-28'},{id:2,title:'ACM程序设计赛考试须知',time:'2026-04-25'},{id:3,title:'物理竞赛获奖名单公示',time:'2026-04-20'}]}},meta:{title:'学生首页'}},
-      {path:'student/contests',component:{template:'#tmpl-contest-list',data(){return{kw:'',cat:'',st:'',page:1,total:24,cats:['数学','物理','化学','生物','信息','英语'],list:[{id:1,name:'2026年全国大学生数学建模竞赛',cat:'数学',dept:'数学与统计学院',status:'报名中',sType:'success',mode:'团队赛',signEnd:'2026-05-15',date:'2026-05-20',count:128,max:300,signed:false},{id:2,name:'ACM程序设计校内选拔赛',cat:'信息',dept:'计算机学院',status:'进行中',sType:'warning',mode:'个人赛',signEnd:'已截止',date:'2026-04-25',count:86,max:200,signed:true},{id:3,name:'英语演讲大赛',cat:'英语',dept:'外国语学院',status:'即将开始',sType:'info',mode:'个人赛',signEnd:'2026-06-01',date:'2026-06-10',count:0,max:100,signed:false},{id:4,name:'物理实验创新竞赛',cat:'物理',dept:'物理学院',status:'已结束',sType:'',mode:'团队赛',signEnd:'已截止',date:'2026-03-15',count:56,max:150,signed:false},{id:5,name:'化学知识竞赛',cat:'化学',dept:'化学化工学院',status:'成绩公示',sType:'danger',mode:'个人赛',signEnd:'已截止',date:'2026-04-01',count:120,max:200,signed:true},{id:6,name:'生物学创新论文大赛',cat:'生物',dept:'生命科学学院',status:'报名中',sType:'success',mode:'个人赛',signEnd:'2026-05-30',date:'2026-06-15',count:35,max:100,signed:false}]},methods:{search(){this.page=1}}},meta:{title:'竞赛列表'}},
-      {path:'student/contest/:id',component:{template:'#tmpl-contest-detail',data(){const id=this.$route.params.id;return{signMode:'create',teamName:'',inviteCode:'',c:{id,name:'2026年全国大学生数学建模竞赛',cat:'数学',dept:'数学与统计学院',mode:'团队赛',signEnd:'2026-05-15',date:'2026-05-20 09:00',duration:180,max:300,count:128,status:'报名中',sType:'success',desc:'本次数学建模竞赛面向全校本科生开放，以团队形式参赛（每队3人）。比赛采取线上限时答题模式，题目涵盖数学建模、算法设计与论文写作。',canSign:true,signed:false,showRank:false},ranks:[]}},methods:{doSign(){ElementPlus.ElMessage.success('报名成功！')},doJoin(){ElementPlus.ElMessage.success('成功加入队伍！')}}},meta:{title:'竞赛详情'}},
-      {path:'student/exam/:cid/:pid',component:{template:'#tmpl-exam',data(){return{paper:{name:'数学建模竞赛试卷'},remaining:7200,timeStr:'120:00',ci:0,questions:[{type:'single',stem:'以下哪个选项不属于数学建模的基本步骤？',score:5,options:[{k:'A',t:'模型假设'},{k:'B',t:'模型求解'},{k:'C',t:'模型推广'},{k:'D',t:'模型验证'}]},{type:'single',stem:'灵敏度分析的主要目的是什么？',score:5,options:[{k:'A',t:'检验参数敏感程度'},{k:'B',t:'提高计算精度'},{k:'C',t:'简化模型结构'},{k:'D',t:'增加复杂性'}]},{type:'multiple',stem:'以下哪些是常见数学建模方法？（多选）',score:10,options:[{k:'A',t:'微分方程建模'},{k:'B',t:'统计分析'},{k:'C',t:'神经网络'},{k:'D',t:'层次分析法'}]},{type:'judge',stem:'数学建模中假设越多越好。',score:5,options:[]},{type:'fill',stem:'回归分析中决定系数R²的取值范围是____。',score:10,options:[]},{type:'essay',stem:'请简述数学建模的基本过程。',score:20,options:[]}],answers:[]}},computed:{q(){return this.questions[this.ci]},done(){return this.answers.filter(a=>a!==''&&a!==undefined).length}},created(){this.answers=this.questions.map(q=>q.type==='multiple'?[]:'');this.startTimer();document.addEventListener('visibilitychange',this.onVisChange)},beforeUnmount(){clearInterval(this._t);document.removeEventListener('visibilitychange',this.onVisChange)},methods:{typeLabel(t){return{single:'单选题',multiple:'多选题',judge:'判断题',fill:'填空题',essay:'简答题',code:'编程题'}[t]||t},startTimer(){this._t=setInterval(()=>{if(this.remaining>0){this.remaining--;const m=Math.floor(this.remaining/60),s=this.remaining%60;this.timeStr=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')}else{clearInterval(this._t);ElementPlus.ElMessage.warning('时间到，自动交卷');this.$router.push('/student/results')}},1000)},onVisChange(){if(document.hidden)ElementPlus.ElMessage.warning('请勿离开考试页面！')},async doSubmit(){try{await ElementPlus.ElMessageBox.confirm('确认交卷？','确认',{type:'warning'});clearInterval(this._t);ElementPlus.ElMessage.success('交卷成功');this.$router.push('/student/results')}catch{}}}},meta:{title:'在线答题',noAuth:true}},
-      {path:'student/results',component:{template:'#tmpl-my-results',data(){return{list:[{id:1,cname:'ACM程序设计选拔赛',cat:'信息',score:85,rank:3,level:'三等奖',obj:40,objTotal:50,sub:45,subTotal:50},{id:2,cname:'化学知识竞赛',cat:'化学',score:72,rank:15,level:null,obj:50,objTotal:60,sub:22,subTotal:40},{id:3,cname:'物理实验创新竞赛',cat:'物理',score:90,rank:2,level:'二等奖',obj:35,objTotal:40,sub:55,subTotal:60}],dv:false,detail:null}},methods:{showDetail(r){this.detail=r;this.dv=true}}},meta:{title:'我的成绩'}},
-      {path:'student/certificates',component:{template:'#tmpl-certificates',data(){return{list:[{id:1,cname:'ACM程序设计选拔赛',level:'三等奖',date:'2026-04-30'},{id:2,cname:'物理实验创新竞赛',level:'二等奖',date:'2026-03-20'}]}}},meta:{title:'电子证书'}},
-      {path:'student/notices',component:{template:'#tmpl-notices',data(){return{list:[{id:1,title:'数学建模竞赛报名通知',content:'各院系：2026年全国大学生数学建模竞赛校内选拔赛将于5月进行，请各院系组织学生积极报名。报名截止日期为5月15日。',time:'2026-04-28',level:'important'},{id:2,title:'ACM程序设计赛考试须知',content:'参加ACM程序设计赛的同学请注意：考试时间为4月25日14:00-16:00，请提前10分钟登录系统，考试期间禁止切屏。',time:'2026-04-25',level:'normal'},{id:3,title:'物理竞赛获奖名单公示',content:'2026年物理实验创新竞赛成绩已公示，请参赛同学登录系统查看成绩。',time:'2026-04-20',level:'normal'}]}}},meta:{title:'公告通知'}},
-      // Teacher
-      {path:'teacher/dashboard',component:{template:'#tmpl-teacher-dashboard',data(){return{cards:[{label:'发布竞赛',value:8,icon:'🏆',color:'#409eff'},{label:'题库总数',value:256,icon:'📄',color:'#67c23a'},{label:'待阅卷',value:42,icon:'✅',color:'#e6a23c'},{label:'参赛学生',value:586,icon:'👤',color:'#f56c6c'}],contests:[{id:1,name:'数学建模竞赛',cat:'数学',status:'报名中',sType:'success',count:128},{id:2,name:'ACM程序设计选拔赛',cat:'信息',status:'进行中',sType:'warning',count:86}],tasks:[{id:1,icon:'✏️',title:'主观题阅卷',desc:'数学建模竞赛',count:24,link:'/teacher/grading'},{id:2,icon:'👥',title:'报名审核',desc:'待审核',count:8,link:'/teacher/contests'}]}}},meta:{title:'教师首页'}},
-      {path:'teacher/contests',component:{template:'#tmpl-teacher-contests',data(){return{list:[{id:1,name:'数学建模竞赛',cat:'数学',mode:'团队赛',count:128,status:'报名中',sType:'success',st:'reg'},{id:2,name:'ACM选拔赛',cat:'信息',mode:'个人赛',count:86,status:'进行中',sType:'warning',st:'on'},{id:3,name:'化学知识竞赛',cat:'化学',mode:'个人赛',count:120,status:'已结束',sType:'info',st:'end'}],dv:false,edit:false,f:{name:'',cat:'',mode:'个人赛',max:200,signEnd:'',date:'',duration:120,desc:''},cats:['数学','物理','化学','生物','信息','英语']}},methods:{showDlg(row){this.edit=!!row;if(row)Object.assign(this.f,row);else{this.f={name:'',cat:'',mode:'个人赛',max:200,signEnd:'',date:'',duration:120,desc:''}};this.dv=true},save(){this.dv=false;ElementPlus.ElMessage.success(this.edit?'修改成功':'创建成功')},publish(r){ElementPlus.ElMessage.success('已发布')},del(r){ElementPlus.ElMessage.success('已删除')}}},meta:{title:'竞赛管理'}},
-      {path:'teacher/questions',component:{template:'#tmpl-teacher-questions',data(){return{kw:'',tp:'',page:1,types:{single:'单选题',multiple:'多选题',judge:'判断题',fill:'填空题',essay:'简答题',code:'编程题'},cats:['数学','物理','化学','生物','信息','英语'],list:[{id:1,stem:'以下哪个选项不属于数学建模的基本步骤？',type:'single',cat:'数学',score:5},{id:2,stem:'微分方程建模通常用于描述哪类问题？',type:'single',cat:'数学',score:5},{id:3,stem:'请简述回归分析的基本思想',type:'essay',cat:'数学',score:20}],dv:false,edit:false,qf:{type:'single',cat:'数学',score:5,stem:'',options:[{k:'A',t:''},{k:'B',t:''},{k:'C',t:''},{k:'D',t:''}],answer:''}},methods:{showDlg(row){this.edit=!!row;if(row)this.qf=JSON.parse(JSON.stringify(row));else{this.qf={type:'single',cat:'数学',score:5,stem:'',options:[{k:'A',t:''},{k:'B',t:''},{k:'C',t:''},{k:'D',t:''}],answer:''}};this.dv=true}}},meta:{title:'题库管理'}},
-      {path:'teacher/grading',component:{template:'#tmpl-teacher-grading',data(){return{cid:null,contests:[{id:1,name:'数学建模竞赛'},{id:2,name:'ACM选拔赛'}],list:[{id:1,sname:'张三',sno:'2024001001',qcount:2,objScore:40},{id:2,sname:'李四',sno:'2024001002',qcount:2,objScore:35},{id:3,sname:'王五',sno:'2024001003',qcount:2,objScore:38}],gv:false,paper:null,types:{essay:'简答题',code:'编程题'}},methods:{startGrade(r){this.paper={sname:r.sname,sno:r.sno,questions:[{type:'essay',stem:'请简述数学建模的基本过程，并举例说明。',max:20,sa:'数学建模的基本过程包括：1.问题分析；2.模型假设；3.模型建立；4.模型求解；5.模型验证与分析。',ref:'建模步骤：问题分析→模型假设→模型建立→模型求解→模型检验→模型应用。',ts:0,comment:''},{type:'essay',stem:'解释灵敏度分析的意义。',max:15,sa:'灵敏度分析研究模型输出对输入参数变化的敏感程度。',ref:'灵敏度分析检验模型对参数变化的敏感程度，识别关键参数。',ts:0,comment:''}]};this.gv=true},submitGrade(){const t=this.paper.questions.reduce((s,q)=>s+(q.ts||0),0);ElementPlus.ElMessage.success('评分提交成功，得分：'+t);this.gv=false}}},meta:{title:'主观题阅卷'}},
-      {path:'teacher/results',component:{template:'#tmpl-teacher-results',data(){return{cid:null,pub:false,contests:[{id:1,name:'数学建模竞赛'},{id:2,name:'ACM选拔赛'}],list:[{id:1,sname:'李明',sno:'2024001001',dept:'数学与统计学院',obj:45,sub:48,total:93,level:'一等奖'},{id:2,sname:'王芳',sno:'2024001002',dept:'计算机学院',obj:40,sub:45,total:85,level:'二等奖'},{id:3,sname:'赵强',sno:'2024001003',dept:'物理学院',obj:38,sub:42,total:80,level:'二等奖'},{id:4,sname:'孙悦',sno:'2024001004',dept:'数学与统计学院',obj:35,sub:40,total:75,level:'三等奖'},{id:5,sname:'周杰',sno:'2024001005',dept:'信息工程学院',obj:30,sub:38,total:68,level:'三等奖'}]}}},meta:{title:'成绩管理'}},
-      // Admin
-      {path:'admin/dashboard',component:{template:'#tmpl-admin-dashboard',data(){return{cards:[{label:'院系数量',value:12,icon:'🏢',color:'#409eff'},{label:'学生总数',value:8326,icon:'👤',color:'#67c23a'},{label:'教师总数',value:156,icon:'👨‍🏫',color:'#e6a23c'},{label:'竞赛总数',value:38,icon:'🏆',color:'#f56c6c'}]}},mounted(){const c=echarts.init(this.$refs.chart);c.setOption({tooltip:{trigger:'axis'},legend:{data:['参赛人数','获奖人数']},xAxis:{type:'category',data:['数学','物理','化学','生物','信息','英语']},yAxis:{type:'value'},series:[{name:'参赛人数',type:'bar',data:[320,180,210,150,280,200]},{name:'获奖人数',type:'bar',data:[48,32,36,25,45,30]}]})},meta:{title:'管理首页'}},
-      {path:'admin/users',component:{template:'#tmpl-admin-users',data(){return{kw:'',rl:'',list:[{id:1,username:'2024001001',realName:'李明',role:'student',dept:'数学与统计学院',cls:'数学2201班'},{id:2,username:'T20230001',realName:'张华',role:'teacher',dept:'计算机学院',cls:'-'},{id:3,username:'admin',realName:'系统管理员',role:'admin',dept:'信息中心',cls:'-'}],dv:false,edit:false,f:{username:'',realName:'',role:'student',dept:'',cls:''},depts:['数学与统计学院','计算机学院','物理学院','外国语学院','化学化工学院','生命科学学院','信息工程学院'],roleMap:{student:'学生',teacher:'教师',admin:'管理员'}},methods:{showDlg(row){this.edit=!!row;if(row)Object.assign(this.f,row);else{this.f={username:'',realName:'',role:'student',dept:'',cls:''}};this.dv=true}}},meta:{title:'用户管理'}},
-      {path:'admin/dept',component:{template:'#tmpl-admin-dept',data(){return{curDept:null,depts:[{id:1,name:'数学与统计学院',code:'MATH'},{id:2,name:'计算机学院',code:'CS'},{id:3,name:'物理学院',code:'PHYS'},{id:4,name:'外国语学院',code:'FL'},{id:5,name:'化学化工学院',code:'CHEM'}],classes:[{id:1,name:'数学2201班',grade:'2022'},{id:2,name:'数学2202班',grade:'2022'},{id:3,name:'数学2301班',grade:'2023'}],ddv:false,df:{name:'',code:''},cdv:false,cf:{name:'',grade:''}},methods:{showDeptDlg(row){if(row)Object.assign(this.df,row);else{this.df={name:'',code:''}};this.ddv=true},showClsDlg(row){if(row)Object.assign(this.cf,row);else{this.cf={name:'',grade:''}};this.cdv=true}}},meta:{title:'院系班级'}},
-      {path:'admin/contests',component:{template:'#tmpl-admin-contests',data(){return{fs:'',list:[{id:1,name:'数学建模竞赛',cat:'数学',pub:'张华',mode:'团队赛',count:128,max:300,status:'报名中',sType:'success',st:'reg'},{id:2,name:'ACM选拔赛',cat:'信息',pub:'李强',mode:'个人赛',count:86,max:200,status:'进行中',sType:'warning',st:'on'},{id:3,name:'英语演讲大赛',cat:'英语',pub:'王丽',mode:'个人赛',count:56,max:100,status:'草稿',sType:'info',st:'draft'},{id:4,name:'物理实验创新竞赛',cat:'物理',pub:'赵刚',mode:'团队赛',count:56,max:150,status:'已结束',sType:'',st:'end'}]}}},meta:{title:'竞赛总览'}},
-      {path:'admin/statistics',component:{template:'#tmpl-admin-statistics',data(){return{cards:[{label:'竞赛总数',value:38,icon:'🏆',color:'#409eff'},{label:'参赛总人次',value:2356,icon:'👤',color:'#67c23a'},{label:'获奖总人次',value:472,icon:'🏅',color:'#e6a23c'},{label:'年均增长',value:'+18%',icon:'📈',color:'#f56c6c'}],deps:[{name:'数学与统计学院',total:856,part:320,rate:37,awards:48},{name:'计算机学院',total:1200,part:280,rate:23,awards:45},{name:'物理学院',total:520,part:180,rate:35,awards:32},{name:'外国语学院',total:680,part:200,rate:29,awards:30}]}},mounted(){const b=echarts.init(this.$refs.barC);b.setOption({tooltip:{trigger:'axis'},xAxis:{type:'category',data:['数学','物理','化学','生物','信息','英语']},yAxis:{type:'value'},series:[{name:'参赛人数',type:'bar',data:[320,180,210,150,280,200],color:'#409eff'}]});const p=echarts.init(this.$refs.pieC);p.setOption({tooltip:{trigger:'item'},series:[{type:'pie',radius:['40%','70%'],data:[{value:128,name:'一等奖'},{value:156,name:'二等奖'},{value:188,name:'三等奖'},{value:208,name:'优秀奖'}]}]})},meta:{title:'数据统计'}},
-      {path:'admin/system',component:{template:'#tmpl-admin-system',data(){return{cfg:{name:'学科竞赛管理系统',email:'admin@school.edu.cn',antiCheat:true,maxCheat:3,autoSave:30,lockCnt:5,rateLimit:100}}},meta:{title:'系统配置'}}
+var router=VueRouter.createRouter({
+  history:VueRouter.createWebHashHistory(),
+  routes:[
+    {path:'/login',name:'Login',component:{template:'#tmpl-login',data:function(){return{form:{username:'',password:'',captcha:''},loading:false,captchaText:''};},created:function(){this.genCaptcha();},methods:{genCaptcha:function(){var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',s='';for(var i=0;i<4;i++)s+=c[Math.floor(Math.random()*c.length)];this.captchaText=s;},refreshCaptcha:function(){this.genCaptcha();},handleLogin:function(){var self=this;if(this.form.captcha.toUpperCase()!==this.captchaText.toUpperCase()){Msg.error('验证码错误');this.genCaptcha();return}this.loading=true;try{var store=useStore();store.login(this.form.username,this.form.password);Msg.success('登录成功');this.$router.push(store.homePath);}catch(e){Msg.error(e.message);}finally{this.loading=false;}}}},meta:{noAuth:true}},
+    {path:'/register',name:'Register',component:{template:'#tmpl-register',data:function(){return{form:{realName:'',username:'',role:'student',deptId:null,className:'',phone:'',password:'',confirmPwd:'',inviteCode:'',agree:false},loading:false,depts:[{id:1,name:'数学与统计学院'},{id:2,name:'计算机学院'},{id:3,name:'物理学院'},{id:4,name:'外国语学院'},{id:5,name:'化学化工学院'},{id:6,name:'生命科学学院'},{id:7,name:'信息工程学院'}]};},methods:{handleRegister:function(){var self=this;this.$refs.formRef.validate().then(function(){self.loading=true;try{var store=useStore();store.register(self.form);setTimeout(function(){Msg.success('注册成功！即将跳转登录页...');setTimeout(function(){self.$router.push('/login');},1200);},800);}catch(e){Msg.error(e.message);self.loading=false;}}).catch(function(){});}}},meta:{noAuth:true}},
+    {path:'/',redirect:'/student/dashboard',component:{template:'#tmpl-layout',data:function(){return{isCollapse:false};},computed:{role:function(){return useStore().role;},userName:function(){return useStore().userName;},roleLabel:function(){return useStore().roleLabel;},route:function(){return this.$route;}},methods:{handleCmd:function(c){if(c==='logout'){MsgBox.confirm('确定退出？','提示',{type:'warning'}).then(function(){useStore().logout();router.push('/login');}).catch(function(){});}else if(c==='pwd'){MsgBox.prompt('请输入新密码','修改密码',{inputType:'password'}).then(function(){Msg.success('密码修改成功');}).catch(function(){});}}}},children:[
+      {path:'student/dashboard',component:{template:'#tmpl-student-dashboard',data:function(){return{cards:[{label:'报名竞赛',value:3,icon:'🏆',color:'#409eff'},{label:'已获奖项',value:2,icon:'🏅',color:'#e6a23c'},{label:'考试完成',value:5,icon:'✅',color:'#67c23a'},{label:'未读通知',value:3,icon:'🔔',color:'#f56c6c'}],contests:[{id:1,name:'2026年数学建模竞赛',cat:'数学',status:'报名中',sType:'success'},{id:2,name:'ACM程序设计选拔赛',cat:'信息',status:'进行中',sType:'warning'},{id:3,name:'英语演讲大赛',cat:'英语',status:'即将开始',sType:'info'}],notices:[{id:1,title:'数学建模竞赛报名通知',time:'2026-04-28'},{id:2,title:'ACM程序设计赛考试须知',time:'2026-04-25'},{id:3,title:'物理竞赛获奖名单公示',time:'2026-04-20'}]};},meta:{title:'学生首页'}},
+      {path:'student/contests',component:{template:'#tmpl-contest-list',data:function(){return{kw:'',cat:'',st:'',page:1,total:24,cats:['数学','物理','化学','生物','信息','英语'],list:[{id:1,name:'2026年全国大学生数学建模竞赛',cat:'数学',dept:'数学与统计学院',status:'报名中',sType:'success',mode:'团队赛',signEnd:'2026-05-15',date:'2026-05-20',count:128,max:300,signed:false},{id:2,name:'ACM程序设计校内选拔赛',cat:'信息',dept:'计算机学院',status:'进行中',sType:'warning',mode:'个人赛',signEnd:'已截止',date:'2026-04-25',count:86,max:200,signed:true},{id:3,name:'英语演讲大赛',cat:'英语',dept:'外国语学院',status:'即将开始',sType:'info',mode:'个人赛',signEnd:'2026-06-01',date:'2026-06-10',count:0,max:100,signed:false},{id:4,name:'物理实验创新竞赛',cat:'物理',dept:'物理学院',status:'已结束',sType:'',mode:'团队赛',signEnd:'已截止',date:'2026-03-15',count:56,max:150,signed:false},{id:5,name:'化学知识竞赛',cat:'化学',dept:'化学化工学院',status:'成绩公示',sType:'danger',mode:'个人赛',signEnd:'已截止',date:'2026-04-01',count:120,max:200,signed:true},{id:6,name:'生物学创新论文大赛',cat:'生物',dept:'生命科学学院',status:'报名中',sType:'success',mode:'个人赛',signEnd:'2026-05-30',date:'2026-06-15',count:35,max:100,signed:false}]};},methods:{search:function(){this.page=1;}},meta:{title:'竞赛列表'}},
+      {path:'student/contest/:id',component:{template:'#tmpl-contest-detail',data:function(){return{signMode:'create',teamName:'',inviteCode:'',c:{id:1,name:'2026年全国大学生数学建模竞赛',cat:'数学',dept:'数学与统计学院',mode:'团队赛',signEnd:'2026-05-15',date:'2026-05-20 09:00',duration:180,max:300,count:128,status:'报名中',statusText:'报名中',sType:'success',desc:'本次数学建模竞赛面向全校本科生开放，以团队形式参赛（每队3人）。比赛采取线上限时答题模式，题目涵盖数学建模、算法设计与论文写作。',canSign:true,signed:true},ranks:[]};},methods:{doSign:function(){Msg.success('报名成功！');},doJoin:function(){Msg.success('成功加入队伍！');}}},meta:{title:'竞赛详情'}},
+      {path:'student/exam/:cid/:pid',component:{template:'#tmpl-exam',data:function(){return{paper:{name:'数学建模竞赛试卷'},remaining:7200,timeStr:'120:00',ci:0,questions:[{type:'single',stem:'以下哪个选项不属于数学建模的基本步骤？',score:5,options:[{k:'A',t:'模型假设'},{k:'B',t:'模型求解'},{k:'C',t:'模型推广'},{k:'D',t:'模型验证'}]},{type:'single',stem:'灵敏度分析的主要目的是什么？',score:5,options:[{k:'A',t:'检验参数敏感程度'},{k:'B',t:'提高计算精度'},{k:'C',t:'简化模型结构'},{k:'D',t:'增加复杂性'}]},{type:'multiple',stem:'以下哪些是常见数学建模方法？',score:10,options:[{k:'A',t:'微分方程建模'},{k:'B',t:'统计分析'},{k:'C',t:'神经网络'},{k:'D',t:'层次分析法'}]},{type:'judge',stem:'数学建模中假设越多越好。',score:5},{type:'fill',stem:'回归分析中决定系数R²的取值范围是____。',score:10},{type:'essay',stem:'请简述数学建模的基本过程。',score:20}],answers:[],_t:null};},computed:{q:function(){return this.questions[this.ci];},done:function(){var self=this;return this.answers.filter(function(a){return a!==''&&a!==undefined;}).length;}},created:function(){var self=this;this.answers=this.questions.map(function(q){return q.type==='multiple'?[]:'';});this.startTimer();this._visHandler=function(){if(document.hidden)Msg.warning('请勿离开考试页面！');};document.addEventListener('visibilitychange',this._visHandler);},beforeUnmount:function(){clearInterval(this._t);document.removeEventListener('visibilitychange',this._visHandler);},methods:{typeLabel:function(t){var m={single:'单选题',multiple:'多选题',judge:'判断题',fill:'填空题',essay:'简答题',code:'编程题'};return m[t]||t;},startTimer:function(){var self=this;this._t=setInterval(function(){if(self.remaining>0){self.remaining--;var m=Math.floor(self.remaining/60),s=self.remaining%60;self.timeStr=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}else{clearInterval(self._t);Msg.warning('时间到，自动交卷');self.$router.push('/student/results');}},1000);},doSubmit:function(){var self=this;MsgBox.confirm('确认交卷？','确认',{type:'warning'}).then(function(){clearInterval(self._t);Msg.success('交卷成功');self.$router.push('/student/results');}).catch(function(){});}}},meta:{title:'在线答题'}},
+      {path:'student/results',component:{template:'#tmpl-my-results',data:function(){return{list:[{id:1,cname:'ACM程序设计选拔赛',cat:'信息',score:85,rank:3,level:'三等奖',obj:40,objTotal:50,sub:45,subTotal:50},{id:2,cname:'化学知识竞赛',cat:'化学',score:72,rank:15,level:null,obj:50,objTotal:60,sub:22,subTotal:40},{id:3,cname:'物理实验创新竞赛',cat:'物理',score:90,rank:2,level:'二等奖',obj:35,objTotal:40,sub:55,subTotal:60}],dv:false,detail:null};},methods:{showDetail:function(r){this.detail=r;this.dv=true;}}},meta:{title:'我的成绩'}},
+      {path:'student/certificates',component:{template:'#tmpl-certificates',data:function(){return{list:[{id:1,cname:'ACM程序设计选拔赛',level:'三等奖',date:'2026-04-30'},{id:2,cname:'物理实验创新竞赛',level:'二等奖',date:'2026-03-20'}]};}},meta:{title:'电子证书'}},
+      {path:'student/notices',component:{template:'#tmpl-notices',data:function(){return{list:[{id:1,title:'数学建模竞赛报名通知',content:'各院系：2026年全国大学生数学建模竞赛校内选拔赛将于5月进行，请各院系组织学生积极报名。报名截止日期为5月15日。',time:'2026-04-28',level:'important'},{id:2,title:'ACM程序设计赛考试须知',content:'参加ACM程序设计赛的同学请注意：考试时间为4月25日14:00-16:00，请提前10分钟登录系统，考试期间禁止切屏。',time:'2026-04-25',level:'normal'},{id:3,title:'物理竞赛获奖名单公示',content:'2026年物理实验创新竞赛成绩已公示，请参赛同学登录系统查看成绩。',time:'2026-04-20',level:'normal'}]};}},meta:{title:'公告通知'}},
+      {path:'teacher/dashboard',component:{template:'#tmpl-teacher-dashboard',data:function(){return{cards:[{label:'发布竞赛',value:8,icon:'🏆',color:'#409eff'},{label:'题库总数',value:256,icon:'📄',color:'#67c23a'},{label:'待阅卷',value:42,icon:'✅',color:'#e6a23c'},{label:'参赛学生',value:586,icon:'👤',color:'#f56c6c'}],contests:[{id:1,name:'数学建模竞赛',cat:'数学',status:'报名中',sType:'success',count:128},{id:2,name:'ACM程序设计选拔赛',cat:'信息',status:'进行中',sType:'warning',count:86}],tasks:[{id:1,icon:'✏️',title:'主观题阅卷',desc:'数学建模竞赛',count:24,link:'/teacher/grading'},{id:2,icon:'👥',title:'报名审核',desc:'待审核',count:8,link:'/teacher/contests'}]};}},meta:{title:'教师首页'}},
+      {path:'teacher/contests',component:{template:'#tmpl-teacher-contests',data:function(){return{list:[{id:1,name:'数学建模竞赛',cat:'数学',mode:'团队赛',count:128,status:'报名中',sType:'success',st:'reg'},{id:2,name:'ACM选拔赛',cat:'信息',mode:'个人赛',count:86,status:'进行中',sType:'warning',st:'on'},{id:3,name:'化学知识竞赛',cat:'化学',mode:'个人赛',count:120,status:'已结束',sType:'info',st:'end'}],dv:false,edit:false,f:{name:'',cat:'',mode:'个人赛',max:200,signEnd:'',date:'',duration:120,desc:''},cats:['数学','物理','化学','生物','信息','英语']};},methods:{showDlg:function(row){this.edit=!!row;if(row)Object.assign(this.f,row);else{this.f={name:'',cat:'',mode:'个人赛',max:200,signEnd:'',date:'',duration:120,desc:''};}this.dv=true;},save:function(){this.dv=false;Msg.success(this.edit?'修改成功':'创建成功');},publish:function(){Msg.success('已发布');},del:function(){Msg.success('已删除');}}},meta:{title:'竞赛管理'}},
+      {path:'teacher/questions',component:{template:'#tmpl-teacher-questions',data:function(){return{kw:'',tp:'',page:1,types:{single:'单选题',multiple:'多选题',judge:'判断题',fill:'填空题',essay:'简答题',code:'编程题'},cats:['数学','物理','化学','生物','信息','英语'],list:[{id:1,stem:'以下哪个选项不属于数学建模的基本步骤？',type:'single',cat:'数学',score:5},{id:2,stem:'微分方程建模通常用于描述哪类问题？',type:'single',cat:'数学',score:5},{id:3,stem:'请简述回归分析的基本思想',type:'essay',cat:'数学',score:20}],dv:false,edit:false,qf:{type:'single',cat:'数学',score:5,stem:'',options:[{k:'A',t:''},{k:'B',t:''},{k:'C',t:''},{k:'D',t:''}],answer:''}};},methods:{showDlg:function(row){this.edit=!!row;if(row)this.qf=JSON.parse(JSON.stringify(row));else{this.qf={type:'single',cat:'数学',score:5,stem:'',options:[{k:'A',t:''},{k:'B',t:''},{k:'C',t:''},{k:'D',t:''}],answer:''};}this.dv=true;}}},meta:{title:'题库管理'}},
+      {path:'teacher/grading',component:{template:'#tmpl-teacher-grading',data:function(){return{cid:null,contests:[{id:1,name:'数学建模竞赛'},{id:2,name:'ACM选拔赛'}],list:[{id:1,sname:'张三',sno:'2024001001',qcount:2,objScore:40},{id:2,sname:'李四',sno:'2024001002',qcount:2,objScore:35},{id:3,sname:'王五',sno:'2024001003',qcount:2,objScore:38}],gv:false,paper:null,types:{essay:'简答题',code:'编程题'}};},methods:{startGrade:function(r){this.paper={sname:r.sname,sno:r.sno,questions:[{type:'essay',stem:'请简述数学建模的基本过程，并举例说明。',max:20,sa:'数学建模的基本过程包括：1.问题分析；2.模型假设；3.模型建立；4.模型求解；5.模型验证与分析。',ref:'建模步骤：问题分析→模型假设→模型建立→模型求解→模型检验→模型应用。',ts:0,comment:''},{type:'essay',stem:'解释灵敏度分析的意义。',max:15,sa:'灵敏度分析研究模型输出对输入参数变化的敏感程度。',ref:'灵敏度分析检验模型对参数变化的敏感程度，识别关键参数。',ts:0,comment:''}]};this.gv=true;},submitGrade:function(){var t=this.paper.questions.reduce(function(s,q){return s+(q.ts||0);},0);Msg.success('评分提交成功，得分：'+t);this.gv=false;}}},meta:{title:'主观题阅卷'}},
+      {path:'teacher/results',component:{template:'#tmpl-teacher-results',data:function(){return{cid:null,pub:false,contests:[{id:1,name:'数学建模竞赛'},{id:2,name:'ACM选拔赛'}],list:[{id:1,sname:'李明',sno:'2024001001',dept:'数学与统计学院',obj:45,sub:48,total:93,level:'一等奖'},{id:2,sname:'王芳',sno:'2024001002',dept:'计算机学院',obj:40,sub:45,total:85,level:'二等奖'},{id:3,sname:'赵强',sno:'2024001003',dept:'物理学院',obj:38,sub:42,total:80,level:'二等奖'},{id:4,sname:'孙悦',sno:'2024001004',dept:'数学与统计学院',obj:35,sub:40,total:75,level:'三等奖'},{id:5,sname:'周杰',sno:'2024001005',dept:'信息工程学院',obj:30,sub:38,total:68,level:'三等奖'}]};}},meta:{title:'成绩管理'}},
+      {path:'admin/dashboard',component:{template:'#tmpl-admin-dashboard',data:function(){return{cards:[{label:'院系数量',value:12,icon:'🏢',color:'#409eff'},{label:'学生总数',value:8326,icon:'👤',color:'#67c23a'},{label:'教师总数',value:156,icon:'👨‍🏫',color:'#e6a23c'},{label:'竞赛总数',value:38,icon:'🏆',color:'#f56c6c'}]};},mounted:function(){if(window.echarts){var c=echarts.init(this.$refs.chart);c.setOption({tooltip:{trigger:'axis'},legend:{data:['参赛人数','获奖人数']},xAxis:{type:'category',data:['数学','物理','化学','生物','信息','英语']},yAxis:{type:'value'},series:[{name:'参赛人数',type:'bar',data:[320,180,210,150,280,200]},{name:'获奖人数',type:'bar',data:[48,32,36,25,45,30]}]});}},meta:{title:'管理首页'}},
+      {path:'admin/users',component:{template:'#tmpl-admin-users',data:function(){return{kw:'',rl:'',list:[{id:1,username:'2024001001',realName:'李明',role:'student',dept:'数学与统计学院',cls:'数学2201班'},{id:2,username:'T20230001',realName:'张华',role:'teacher',dept:'计算机学院',cls:'-'},{id:3,username:'admin',realName:'系统管理员',role:'admin',dept:'信息中心',cls:'-'}],dv:false,edit:false,f:{username:'',realName:'',role:'student',dept:'',cls:''},depts:['数学与统计学院','计算机学院','物理学院','外国语学院','化学化工学院','生命科学学院','信息工程学院'],roleMap:{student:'学生',teacher:'教师',admin:'管理员'}};},methods:{showDlg:function(row){this.edit=!!row;if(row)Object.assign(this.f,row);else{this.f={username:'',realName:'',role:'student',dept:'',cls:''};}this.dv=true;}}},meta:{title:'用户管理'}},
+      {path:'admin/dept',component:{template:'#tmpl-admin-dept',data:function(){return{curDept:null,depts:[{id:1,name:'数学与统计学院',code:'MATH'},{id:2,name:'计算机学院',code:'CS'},{id:3,name:'物理学院',code:'PHYS'},{id:4,name:'外国语学院',code:'FL'},{id:5,name:'化学化工学院',code:'CHEM'}],classes:[{id:1,name:'数学2201班',grade:'2022'},{id:2,name:'数学2202班',grade:'2022'},{id:3,name:'数学2301班',grade:'2023'}],ddv:false,df:{name:'',code:''},cdv:false,cf:{name:'',grade:''}};},methods:{showDeptDlg:function(row){if(row)Object.assign(this.df,row);else{this.df={name:'',code:''};}this.ddv=true;},showClsDlg:function(row){if(row)Object.assign(this.cf,row);else{this.cf={name:'',grade:''};}this.cdv=true;}}},meta:{title:'院系班级'}},
+      {path:'admin/contests',component:{template:'#tmpl-admin-contests',data:function(){return{fs:'',list:[{id:1,name:'数学建模竞赛',cat:'数学',pub:'张华',mode:'团队赛',count:128,max:300,status:'报名中',sType:'success',st:'reg'},{id:2,name:'ACM选拔赛',cat:'信息',pub:'李强',mode:'个人赛',count:86,max:200,status:'进行中',sType:'warning',st:'on'},{id:3,name:'英语演讲大赛',cat:'英语',pub:'王丽',mode:'个人赛',count:56,max:100,status:'草稿',sType:'info',st:'draft'},{id:4,name:'物理实验创新竞赛',cat:'物理',pub:'赵刚',mode:'团队赛',count:56,max:150,status:'已结束',sType:'',st:'end'}]};}},meta:{title:'竞赛总览'}},
+      {path:'admin/statistics',component:{template:'#tmpl-admin-statistics',data:function(){return{cards:[{label:'竞赛总数',value:38,icon:'🏆',color:'#409eff'},{label:'参赛总人次',value:2356,icon:'👤',color:'#67c23a'},{label:'获奖总人次',value:472,icon:'🏅',color:'#e6a23c'},{label:'年均增长',value:'+18%',icon:'📈',color:'#f56c6c'}],deps:[{name:'数学与统计学院',total:856,part:320,rate:37,awards:48},{name:'计算机学院',total:1200,part:280,rate:23,awards:45},{name:'物理学院',total:520,part:180,rate:35,awards:32},{name:'外国语学院',total:680,part:200,rate:29,awards:30}]};},mounted:function(){if(window.echarts){var b=echarts.init(this.$refs.barC);b.setOption({tooltip:{trigger:'axis'},xAxis:{type:'category',data:['数学','物理','化学','生物','信息','英语']},yAxis:{type:'value'},series:[{name:'参赛人数',type:'bar',data:[320,180,210,150,280,200],color:'#409eff'}]});var p=echarts.init(this.$refs.pieC);p.setOption({tooltip:{trigger:'item'},series:[{type:'pie',radius:['40%','70%'],data:[{value:128,name:'一等奖'},{value:156,name:'二等奖'},{value:188,name:'三等奖'},{value:208,name:'优秀奖'}]}]});}},meta:{title:'数据统计'}},
+      {path:'admin/system',component:{template:'#tmpl-admin-system',data:function(){return{cfg:{name:'学科竞赛管理系统',email:'admin@school.edu.cn',antiCheat:true,maxCheat:3,autoSave:30,lockCnt:5,rateLimit:100}};}},meta:{title:'系统配置'}}
     ]}
   ]
-})
+});
 
-// ===== Route Guard =====
-router.beforeEach((to,from,next)=>{
-  document.title=(to.meta.title?to.meta.title+' - ':'')+'学科竞赛管理系统'
-  const store=useStore()
-  if(to.meta.noAuth) return to.path==='/login'&&store.isLogin ? next(store.homePath) : next()
-  if(!store.isLogin) return next('/login')
-  if(!to.path.includes('/'+store.role+'/')&&to.path!=='/') {
-    // Redirect to correct role home
-    if(to.path==='/') return next(store.homePath)
-    return next(store.homePath)
-  }
-  next()
-})
+router.beforeEach(function(to,from,next){
+  document.title=(to.meta.title?to.meta.title+' - ':'')+'学科竞赛管理系统';
+  var store=useStore();
+  if(to.meta.noAuth) return to.path==='/login'&&store.isLogin?next(store.homePath):next();
+  if(!store.isLogin) return next('/login');
+  next();
+});
 
-// ===== Mount App =====
-const app = Vue.createApp({})
-app.use(ElementPlus,{locale:ElementPlus.localeZhCn||{}})
-app.use(pinia)
-app.use(router)
-// Register icons
-if(window.ElementPlusIconsVue){
-  for(const[k,c] of Object.entries(window.ElementPlusIconsVue)) app.component(k,c)
-}
-app.mount('#app')
+// Mount
+var app=Vue.createApp({});
+app.use(ElementPlus);
+app.use(pinia);
+app.use(router);
+app.mount('#app');
+
+// Hide loading
+var ld=document.getElementById('app-loading');
+if(ld) ld.style.display='none';
+
+})();
 </script>
 </body>
 </html>
